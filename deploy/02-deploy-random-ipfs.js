@@ -23,28 +23,28 @@ let tokenUris = [
 	"ipfs://QmZYmH5iDbD6v3U2ixoVAjioSzvWJszDzYdbeCLquGSpVm",
 ];
 
-const FUND_AMOUNT = "10000000000000000000" // 10 LINK
+const FUND_AMOUNT = "10000000000000000000"; // 10 LINK
 
 module.exports = async function ({ getNamedAccounts, deployments }) {
 	const { deploy, log } = deployments;
 	const { deployer } = await getNamedAccounts();
 	const chainId = network.config.chainId;
-	
+
 	if (process.env.UPLOAD_TO_PINATA == "true") {
 		tokenUris = await handleTokenUris();
 	}
 
-	let vrfCoordinatorV2Address, subscriptionId;
+	let VRFCoordinatorV2Mock, vrfCoordinatorV2Address, subscriptionId;
 
 	if (developmentChains.includes(network.name)) {
-		const VRFCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock");
+		VRFCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock");
 		vrfCoordinatorV2Address = VRFCoordinatorV2Mock.address;
 		const tx = await VRFCoordinatorV2Mock.createSubscription();
 		const txReceipt = await tx.wait(1);
 		subscriptionId = txReceipt.events[0].args.subId;
-		await VRFCoordinatorV2Mock.fundSubscription(subscriptionId, FUND_AMOUNT)
+		await VRFCoordinatorV2Mock.fundSubscription(subscriptionId, FUND_AMOUNT);
 	} else {
-		vrfCoordinatorV2Address = networkConfig[chainId].VRFCoordinatorV2;
+		vrfCoordinatorV2Address = networkConfig[chainId].vrfCoordinatorV2;
 		subscriptionId = networkConfig[chainId].subscriptionId;
 	}
 
@@ -64,6 +64,8 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
 		log: true,
 		waitConfirmations: network.config.blockConfirmations || 1,
 	});
+
+	//await VRFCoordinatorV2Mock.addConsumer(subscriptionId, randomIpfsNft.address);
 	log("----------------------------------------------");
 	if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
 		log("Verifying...");
